@@ -42,13 +42,30 @@
                                     <i class="fa fa-images me-1"></i> {{ $gallery->images_count }}
                                     {{ Str::plural('photo', $gallery->images_count) }}
                                 </span>
+                                {{-- Category Badge --}}
+                                @if ($gallery->category)
+                                    <span class="badge bg-primary bg-opacity-75 text-white rounded-pill px-3 py-1 small ms-1">
+                                        <i class="fa fa-folder me-1"></i> {{ $gallery->category->name }}
+                                    </span>
+                                @endif
                             </div>
                         </div>
                         <div class="p-3 d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="fw-bold mb-1">{{ $gallery->name }}</h6>
                                 <p class="text-muted small mb-1">{{ $gallery->short_description }}</p>
-                                <p class="text-muted small mb-0">{{ $gallery->created_at->format('d M Y') }}</p>
+                                <div class="d-flex align-items-center gap-2">
+                                    @if ($gallery->category)
+                                        <span class="badge bg-light text-muted rounded-pill px-2" style="font-size: 10px;">
+                                            {{ $gallery->category->name }}
+                                        </span>
+                                    @else
+                                        <span class="badge bg-light text-muted rounded-pill px-2" style="font-size: 10px;">
+                                            Uncategorized
+                                        </span>
+                                    @endif
+                                    <span class="text-muted small">{{ $gallery->created_at->format('d M Y') }}</span>
+                                </div>
                             </div>
                             <div class="d-flex gap-2">
                                 <button class="btn btn-sm btn-light rounded-circle" style="width: 35px; height: 35px;"
@@ -105,12 +122,11 @@
                     @csrf
                     <div class="modal-body p-4">
                         <div class="row g-4">
+
                             <div class="col-md-12">
-                                <label class="form-label fw-medium small text-muted">Gallery Name <span
-                                        class="text-danger">*</span></label>
+                                <label class="form-label fw-medium small text-muted">Gallery Name <span class="text-danger">*</span></label>
                                 <div class="input-group bg-light rounded-3 border">
-                                    <span class="input-group-text bg-transparent border-0"><i
-                                            class="fa fa-folder text-muted small"></i></span>
+                                    <span class="input-group-text bg-transparent border-0"><i class="fa fa-folder text-muted small"></i></span>
                                     <input type="text" class="form-control bg-transparent border-0 py-2" name="name"
                                         placeholder="e.g. Annual Day 2026" value="{{ old('name') }}" required>
                                 </div>
@@ -119,14 +135,31 @@
                                 @enderror
                             </div>
 
+                            {{-- Category Dropdown --}}
                             <div class="col-md-12">
-                                <label class="form-label fw-medium small text-muted">Short Description <span
-                                        class="text-danger">*</span></label>
+                                <label class="form-label fw-medium small text-muted">Category <span class="text-danger">*</span></label>
                                 <div class="input-group bg-light rounded-3 border">
-                                    <span class="input-group-text bg-transparent border-0"><i
-                                            class="fa fa-folder text-muted small"></i></span>
+                                    <span class="input-group-text bg-transparent border-0"><i class="fa fa-tag text-muted small"></i></span>
+                                    <select class="form-select bg-transparent border-0 py-2" name="category_id" required>
+                                        <option value="" disabled selected>Select a category</option>
+                                        @foreach ($categories as $category)
+                                            <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                                {{ $category->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                @error('category_id')
+                                    <span class="text-danger small mt-1">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-medium small text-muted">Short Description <span class="text-danger">*</span></label>
+                                <div class="input-group bg-light rounded-3 border">
+                                    <span class="input-group-text bg-transparent border-0"><i class="fa fa-align-left text-muted small"></i></span>
                                     <input type="text" class="form-control bg-transparent border-0 py-2" name="short_description"
-                                        placeholder="e.g. Annual Day 2026" value="{{ old('short_description') }}" required>
+                                        placeholder="e.g. Highlights from Annual Day" value="{{ old('short_description') }}" required>
                                 </div>
                                 @error('short_description')
                                     <span class="text-danger small mt-1">{{ $message }}</span>
@@ -134,46 +167,17 @@
                             </div>
 
                             <div class="col-md-12">
-                                <label class="form-label fw-medium small text-muted">Preview Image <span
-                                        class="text-danger">*</span></label>
-                                <div class="upload-area p-4 rounded-4 text-center" id="previewUploadArea"
-                                    style="border: 2px dashed #d1d5db; cursor: pointer; transition: all 0.3s ease;">
-                                    <input type="file" name="preview_image" id="previewInput" class="d-none"
-                                        accept="image/*" required>
-                                    <div id="previewPlaceholder">
-                                        <i class="fa fa-image text-muted mb-2" style="font-size: 2rem; opacity: 0.5;"></i>
-                                        <p class="text-muted small mb-0 fw-medium">Click to upload preview image</p>
-                                        <p class="text-muted small mb-0" style="font-size: 11px;">This will be the cover
-                                            photo for the gallery</p>
-                                    </div>
-                                    <div id="previewPreviewDiv" class="d-none">
-                                        <img id="previewPreviewImg" src="" class="rounded-3 shadow-sm"
-                                            style="max-height: 150px; object-fit: cover;">
-                                        <p class="text-muted small mt-2 mb-0 fw-medium" id="previewFileName"></p>
-                                    </div>
-                                </div>
-                                @error('preview_image')
-                                    <span class="text-danger small mt-1">{{ $message }}</span>
-                                @enderror
-                            </div>
-
-                            <div class="col-md-12">
-                                <label class="form-label fw-medium small text-muted">Gallery Photos <span
-                                        class="text-danger">*</span></label>
+                                <label class="form-label fw-medium small text-muted">Gallery Photos <span class="text-danger">*</span></label>
                                 <div class="upload-area p-4 rounded-4 text-center" id="multiUploadArea"
                                     style="border: 2px dashed #d1d5db; cursor: pointer; transition: all 0.3s ease;">
-                                    <input type="file" name="images[]" id="multiInput" class="d-none"
-                                        accept="image/*" multiple required>
+                                    <input type="file" name="images[]" id="multiInput" class="d-none" accept="image/*" multiple required>
                                     <div id="multiPlaceholder">
-                                        <i class="fa fa-cloud-upload-alt text-muted mb-2"
-                                            style="font-size: 2rem; opacity: 0.5;"></i>
+                                        <i class="fa fa-cloud-upload-alt text-muted mb-2" style="font-size: 2rem; opacity: 0.5;"></i>
                                         <p class="text-muted small mb-0 fw-medium">Click to upload gallery photos</p>
-                                        <p class="text-muted small mb-0" style="font-size: 11px;">Select multiple images
-                                            (JPEG, PNG, JPG, WEBP — Max 2MB each)</p>
+                                        <p class="text-muted small mb-0" style="font-size: 11px;">Select multiple images (JPEG, PNG, JPG, WEBP)</p>
                                     </div>
                                     <div id="multiPreviewDiv" class="d-none">
-                                        <div id="multiPreviewGrid" class="d-flex flex-wrap gap-2 justify-content-center">
-                                        </div>
+                                        <div id="multiPreviewGrid" class="d-flex flex-wrap gap-2 justify-content-center"></div>
                                         <p class="text-muted small mt-2 mb-0 fw-medium" id="multiFileCount"></p>
                                     </div>
                                 </div>
@@ -184,11 +188,11 @@
                                     <span class="text-danger small mt-1">{{ $message }}</span>
                                 @enderror
                             </div>
+
                         </div>
                     </div>
                     <div class="modal-footer border-0 px-4 pb-4 pt-0">
-                        <button type="button" class="btn btn-light rounded-pill px-4 py-2 fw-bold"
-                            data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-light rounded-pill px-4 py-2 fw-bold" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm">
                             <i class="fa fa-plus me-2"></i> Create Gallery
                         </button>
@@ -200,6 +204,7 @@
 
     {{-- Per-gallery Modals --}}
     @foreach ($galleries as $gallery)
+
         {{-- View Gallery Modal --}}
         <div class="modal fade" id="viewGalleryModal{{ $gallery->id }}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -207,9 +212,13 @@
                     <div class="modal-header border-0 px-4 pt-4 pb-2">
                         <div>
                             <h5 class="modal-title fw-bold">{{ $gallery->name }}</h5>
-                            <p class="text-muted small mb-0">{{ $gallery->images->count() }}
-                                {{ Str::plural('photo', $gallery->images->count()) }} · Created
-                                {{ $gallery->created_at->format('d M Y') }}</p>
+                            <p class="text-muted small mb-0">
+                                {{ $gallery->images->count() }} {{ Str::plural('photo', $gallery->images->count()) }}
+                                @if ($gallery->category)
+                                    · <span class="badge bg-light text-muted rounded-pill px-2">{{ $gallery->category->name }}</span>
+                                @endif
+                                · Created {{ $gallery->created_at->format('d M Y') }}
+                            </p>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -218,11 +227,9 @@
                             <div class="row g-3">
                                 @foreach ($gallery->images as $image)
                                     <div class="col-6 col-md-4 col-lg-3">
-                                        <div class="position-relative group">
-                                            <img src="{{ asset('storage/' . $image->image) }}"
-                                                class="w-100 rounded-3 shadow-sm"
-                                                style="height: 160px; object-fit: cover;" alt="Gallery image">
-                                        </div>
+                                        <img src="{{ asset('storage/' . $image->image) }}"
+                                            class="w-100 rounded-3 shadow-sm"
+                                            style="height: 160px; object-fit: cover;" alt="Gallery image">
                                     </div>
                                 @endforeach
                             </div>
@@ -248,49 +255,45 @@
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <form action="{{ route('admin.gallery.update', $gallery->id) }}" method="POST"
-                        enctype="multipart/form-data">
+                    <form action="{{ route('admin.gallery.update', $gallery->id) }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
                         <div class="modal-body p-4">
                             <div class="row g-4">
+
                                 <div class="col-md-12">
-                                    <label class="form-label fw-medium small text-muted">Gallery Name <span
-                                            class="text-danger">*</span></label>
+                                    <label class="form-label fw-medium small text-muted">Gallery Name <span class="text-danger">*</span></label>
                                     <div class="input-group bg-light rounded-3 border">
-                                        <span class="input-group-text bg-transparent border-0"><i
-                                                class="fa fa-folder text-muted small"></i></span>
+                                        <span class="input-group-text bg-transparent border-0"><i class="fa fa-folder text-muted small"></i></span>
                                         <input type="text" class="form-control bg-transparent border-0 py-2"
                                             name="name" value="{{ $gallery->name }}" required>
                                     </div>
                                 </div>
+
+                                {{-- Category Dropdown --}}
                                 <div class="col-md-12">
-                                    <label class="form-label fw-medium small text-muted">Short Description <span
-                                            class="text-danger">*</span></label>
+                                    <label class="form-label fw-medium small text-muted">Category <span class="text-danger">*</span></label>
                                     <div class="input-group bg-light rounded-3 border">
-                                        <span class="input-group-text bg-transparent border-0"><i
-                                                class="fa fa-folder text-muted small"></i></span>
-                                        <input type="text" class="form-control bg-transparent border-0 py-2"
-                                            name="short_description" value="{{ $gallery->short_description }}" required>
+                                        <span class="input-group-text bg-transparent border-0"><i class="fa fa-tag text-muted small"></i></span>
+                                        <select class="form-select bg-transparent border-0 py-2" name="category_id" required>
+                                            <option value="" disabled>Select a category</option>
+                                            @foreach ($categories as $category)
+                                                <option value="{{ $category->id }}"
+                                                    {{ $gallery->category_id == $category->id ? 'selected' : '' }}>
+                                                    {{ $category->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
                                     </div>
                                 </div>
 
-
                                 <div class="col-md-12">
-                                    <label class="form-label fw-medium small text-muted">Preview Image <span
-                                            class="text-muted">(Leave empty to keep current)</span></label>
-                                    <div class="d-flex align-items-center gap-3 mb-3">
-                                        <img src="{{ asset('storage/' . $gallery->preview_image) }}"
-                                            class="rounded-3 shadow-sm" width="80" height="60"
-                                            style="object-fit: cover;">
-                                        <div>
-                                            <p class="mb-0 small fw-medium">Current Preview</p>
-                                            <p class="mb-0 text-muted" style="font-size: 11px;">Upload a new one to
-                                                replace</p>
-                                        </div>
+                                    <label class="form-label fw-medium small text-muted">Short Description <span class="text-danger">*</span></label>
+                                    <div class="input-group bg-light rounded-3 border">
+                                        <span class="input-group-text bg-transparent border-0"><i class="fa fa-align-left text-muted small"></i></span>
+                                        <input type="text" class="form-control bg-transparent border-0 py-2"
+                                            name="short_description" value="{{ $gallery->short_description }}" required>
                                     </div>
-                                    <input type="file" name="preview_image" class="form-control rounded-3 py-2"
-                                        accept="image/*">
                                 </div>
 
                                 {{-- Existing Images --}}
@@ -301,8 +304,7 @@
                                             @foreach ($gallery->images as $image)
                                                 <div class="position-relative" style="width: 80px; height: 80px;">
                                                     <img src="{{ asset('storage/' . $image->image) }}"
-                                                        class="w-100 h-100 rounded-3 shadow-sm"
-                                                        style="object-fit: cover;">
+                                                        class="w-100 h-100 rounded-3 shadow-sm" style="object-fit: cover;">
                                                     <a href="#"
                                                         class="btn btn-danger btn-sm rounded-circle d-flex align-items-center justify-content-center position-absolute top-0 end-0 delete-gallery-image-btn"
                                                         style="width: 22px; height: 22px; padding: 0; font-size: 10px; margin: -6px -6px 0 0;"
@@ -317,18 +319,15 @@
                                 @endif
 
                                 <div class="col-md-12">
-                                    <label class="form-label fw-medium small text-muted">Add More Photos <span
-                                            class="text-muted">(Optional)</span></label>
-                                    <input type="file" name="images[]" class="form-control rounded-3 py-2"
-                                        accept="image/*" multiple>
-                                    <p class="text-muted small mt-1 mb-0" style="font-size: 11px;">Select multiple images
-                                        to add to this gallery</p>
+                                    <label class="form-label fw-medium small text-muted">Add More Photos <span class="text-muted">(Optional)</span></label>
+                                    <input type="file" name="images[]" class="form-control rounded-3 py-2" accept="image/*" multiple>
+                                    <p class="text-muted small mt-1 mb-0" style="font-size: 11px;">Select multiple images to add to this gallery</p>
                                 </div>
+
                             </div>
                         </div>
                         <div class="modal-footer border-0 px-4 pb-4 pt-0">
-                            <button type="button" class="btn btn-light rounded-pill px-4 py-2 fw-bold"
-                                data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-light rounded-pill px-4 py-2 fw-bold" data-bs-dismiss="modal">Cancel</button>
                             <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm">
                                 <i class="fa fa-save me-2"></i> Update Gallery
                             </button>
@@ -353,8 +352,7 @@
                             {{ Str::plural('photo', $gallery->images_count) }}? This cannot be undone.</p>
                     </div>
                     <div class="modal-footer border-0 justify-content-center px-4 pb-4 pt-0 gap-2">
-                        <button type="button" class="btn btn-light rounded-pill px-4 py-2 fw-bold"
-                            data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-light rounded-pill px-4 py-2 fw-bold" data-bs-dismiss="modal">Cancel</button>
                         <form action="{{ route('admin.gallery.delete', $gallery->id) }}" method="POST">
                             @csrf
                             @method('DELETE')
@@ -366,9 +364,10 @@
                 </div>
             </div>
         </div>
+
     @endforeach
 
-    {{-- Hidden form for gallery image deletion (avoids nested form issue) --}}
+    {{-- Hidden form for gallery image deletion --}}
     <form id="deleteGalleryImageForm" method="POST" style="display: none;">
         @csrf
         @method('DELETE')
@@ -380,31 +379,13 @@
     <script>
         // Preview image upload
         const previewUploadArea = document.getElementById('previewUploadArea');
-        const previewInput = document.getElementById('previewInput');
-        const previewPlaceholder = document.getElementById('previewPlaceholder');
-        const previewPreviewDiv = document.getElementById('previewPreviewDiv');
-        const previewPreviewImg = document.getElementById('previewPreviewImg');
-        const previewFileName = document.getElementById('previewFileName');
+        const previewInput      = document.getElementById('previewInput');
+        const previewPlaceholder  = document.getElementById('previewPlaceholder');
+        const previewPreviewDiv   = document.getElementById('previewPreviewDiv');
+        const previewPreviewImg   = document.getElementById('previewPreviewImg');
+        const previewFileName     = document.getElementById('previewFileName');
 
         previewUploadArea.addEventListener('click', () => previewInput.click());
-        previewUploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            previewUploadArea.style.borderColor = '#4361ee';
-            previewUploadArea.style.background = 'rgba(67,97,238,0.05)';
-        });
-        previewUploadArea.addEventListener('dragleave', () => {
-            previewUploadArea.style.borderColor = '#d1d5db';
-            previewUploadArea.style.background = 'transparent';
-        });
-        previewUploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            previewUploadArea.style.borderColor = '#d1d5db';
-            previewUploadArea.style.background = 'transparent';
-            if (e.dataTransfer.files.length) {
-                previewInput.files = e.dataTransfer.files;
-                showSinglePreview(e.dataTransfer.files[0]);
-            }
-        });
         previewInput.addEventListener('change', (e) => {
             if (e.target.files.length) showSinglePreview(e.target.files[0]);
         });
@@ -421,32 +402,14 @@
         }
 
         // Multi image upload
-        const multiUploadArea = document.getElementById('multiUploadArea');
-        const multiInput = document.getElementById('multiInput');
+        const multiUploadArea  = document.getElementById('multiUploadArea');
+        const multiInput       = document.getElementById('multiInput');
         const multiPlaceholder = document.getElementById('multiPlaceholder');
-        const multiPreviewDiv = document.getElementById('multiPreviewDiv');
+        const multiPreviewDiv  = document.getElementById('multiPreviewDiv');
         const multiPreviewGrid = document.getElementById('multiPreviewGrid');
-        const multiFileCount = document.getElementById('multiFileCount');
+        const multiFileCount   = document.getElementById('multiFileCount');
 
         multiUploadArea.addEventListener('click', () => multiInput.click());
-        multiUploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            multiUploadArea.style.borderColor = '#4361ee';
-            multiUploadArea.style.background = 'rgba(67,97,238,0.05)';
-        });
-        multiUploadArea.addEventListener('dragleave', () => {
-            multiUploadArea.style.borderColor = '#d1d5db';
-            multiUploadArea.style.background = 'transparent';
-        });
-        multiUploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            multiUploadArea.style.borderColor = '#d1d5db';
-            multiUploadArea.style.background = 'transparent';
-            if (e.dataTransfer.files.length) {
-                multiInput.files = e.dataTransfer.files;
-                showMultiPreview(e.dataTransfer.files);
-            }
-        });
         multiInput.addEventListener('change', (e) => {
             if (e.target.files.length) showMultiPreview(e.target.files);
         });
@@ -471,15 +434,15 @@
 
         // Auto-open modal if validation errors exist
         @if ($errors->any())
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function () {
                 var modal = new bootstrap.Modal(document.getElementById('addGalleryModal'));
                 modal.show();
             });
         @endif
 
-        // Gallery image delete via hidden form (avoids nested form issue)
+        // Gallery image delete via hidden form
         document.querySelectorAll('.delete-gallery-image-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
                 if (confirm('Remove this image?')) {
@@ -498,7 +461,6 @@
             border-color: #4361ee !important;
             background: rgba(67, 97, 238, 0.03);
         }
-
         .premium-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;

@@ -30,6 +30,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/toppers/{topper}', [AdminController::class, 'topperDelete'])->name('toppers.delete');
 
         // Gallery
+        Route::get('gallery/category', [AdminController::class, 'galleryCategoryList'])->name('gallery.category.index');
+        Route::post('gallery/category/store', [AdminController::class, 'galleryCategoryStore'])->name('gallery.category.store');
+        Route::put('gallery/category/{id}/update', [AdminController::class, 'galleryCategoryUpdate'])->name('gallery.category.update');
+        Route::delete('gallery/category/{id}/delete', [AdminController::class, 'galleryCategoryDelete'])->name('gallery.category.delete');
+
         Route::get('/gallery', [AdminController::class, 'galleryList'])->name('gallery.index');
         Route::post('/gallery', [AdminController::class, 'galleryStore'])->name('gallery.store');
         Route::put('/gallery/{galary}', [AdminController::class, 'galleryUpdate'])->name('gallery.update');

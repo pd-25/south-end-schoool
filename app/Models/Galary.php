@@ -13,12 +13,17 @@ class Galary extends Model
 
     protected $fillable = [
         'name',
-        'preview_image',
-        'short_description'
+        'short_description',
+        'category_id',
     ];
 
     public function images()
     {
         return $this->hasMany(GalleryImages::class, 'gallery_id');
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(GalleryCategory::class, 'category_id');
     }
 }

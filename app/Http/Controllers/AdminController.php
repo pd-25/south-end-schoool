@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Intervention\Image\Image as InterventionImage;
 use App\Models\Teacher;
 use App\Models\Topper;
 use App\Models\Galary;
@@ -12,11 +13,12 @@ use App\Models\Syllabus;
 use App\Models\Result;
 use App\Models\LatestNews;
 use App\Models\Career;
+use App\Models\GalleryCategory;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\Image as InterventionImage;
 
 class AdminController extends Controller
 {
@@ -155,35 +157,136 @@ class AdminController extends Controller
 
     // ─── Gallery ─────────────────────────────────────
 
+
+
+    public function galleryCategoryList()
+    {
+        $categories = GalleryCategory::latest()->paginate(10);
+        return view('admin.gallery.category', compact('categories'));
+    }
+
+    public function galleryCategoryStore(Request $request)
+    {
+        $request->validate([
+            'name'  => 'required|string|max:255|unique:gallery_categories,name',
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+        ]);
+
+        $image    = $request->file('image');
+        $filename = time() . '_' . uniqid() . '.jpg';
+        $savePath = storage_path('app/public/gallery-categories/' . $filename);
+
+        if (!file_exists(storage_path('app/public/gallery-categories'))) {
+            mkdir(storage_path('app/public/gallery-categories'), 0755, true);
+        }
+
+        $manager = new ImageManager(new Driver());
+        $manager->read($image)->scaleDown(width: 800)->toJpeg(quality: 80)->save($savePath);
+
+        GalleryCategory::create([
+            'name'  => $request->name,
+            'slug'  => Str::slug($request->name),
+            'image' => 'gallery-categories/' . $filename,
+        ]);
+
+        return redirect()->route('admin.gallery.category.index')->with('success', 'Category added successfully!');
+    }
+
+    public function galleryCategoryUpdate(Request $request, $id)
+    {
+        $category = GalleryCategory::findOrFail($id);
+
+        $request->validate([
+            'name'  => 'required|string|max:255|unique:gallery_categories,name,' . $id,
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+        ]);
+
+        $data = [
+            'name' => $request->name,
+            'slug' => Str::slug($request->name),
+        ];
+
+        if ($request->hasFile('image')) {
+            // Delete old image
+            if ($category->image && Storage::disk('public')->exists($category->image)) {
+                Storage::disk('public')->delete($category->image);
+            }
+
+            $image    = $request->file('image');
+            $filename = time() . '_' . uniqid() . '.jpg';
+            $savePath = storage_path('app/public/gallery-categories/' . $filename);
+
+            if (!file_exists(storage_path('app/public/gallery-categories'))) {
+                mkdir(storage_path('app/public/gallery-categories'), 0755, true);
+            }
+
+            $manager = new ImageManager(new Driver());
+            $manager->read($image)->scaleDown(width: 800)->toJpeg(quality: 80)->save($savePath);
+
+            $data['image'] = 'gallery-categories/' . $filename;
+        }
+
+        $category->update($data);
+
+        return redirect()->route('admin.gallery.category.index')->with('success', 'Category updated successfully!');
+    }
+
+    public function galleryCategoryDelete($id)
+    {
+        $category = GalleryCategory::findOrFail($id);
+
+        // Delete image from storage
+        if ($category->image && Storage::disk('public')->exists($category->image)) {
+            Storage::disk('public')->delete($category->image);
+        }
+
+        $category->delete();
+
+        return redirect()->route('admin.gallery.category.index')->with('success', 'Category deleted successfully!');
+    }
+
     public function galleryList()
     {
-        $galleries = Galary::withCount('images')->latest()->paginate(10);
-        return view('admin.gallery.index', compact('galleries'));
+        $categories = GalleryCategory::get();
+        $galleries  = Galary::with('category')->withCount('images')->latest()->paginate(10);
+
+        return view('admin.gallery.index', compact('galleries', 'categories'));
     }
 
     public function galleryStore(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'preview_image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'images' => 'required|array|min:1',
-            'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
+            'name'              => 'required|string|max:255',
+            'category_id'       => 'required|exists:gallery_categories,id',
             'short_description' => 'nullable|string|max:255',
+            'images'            => 'required|array|min:1',
+            'images.*'          => 'image|mimes:jpeg,png,jpg,webp|max:10240',
         ]);
 
-        $previewPath = $request->file('preview_image')->store('gallery/previews', 'public');
-
         $gallery = Galary::create([
-            'name' => $request->name,
-            'preview_image' => $previewPath,
+            'name'              => $request->name,
+            'category_id'       => $request->category_id,
             'short_description' => $request->short_description,
         ]);
 
+        if (!file_exists(storage_path('app/public/gallery/images'))) {
+            mkdir(storage_path('app/public/gallery/images'), 0755, true);
+        }
+
+        $manager = new ImageManager(new Driver());
+
         foreach ($request->file('images') as $image) {
-            $imagePath = $image->store('gallery/images', 'public');
+            $filename = time() . '_' . uniqid() . '.jpg';
+            $savePath = storage_path('app/public/gallery/images/' . $filename);
+
+            $manager->read($image)
+                ->scaleDown(width: 1200)
+                ->toJpeg(quality: 75)
+                ->save($savePath);
+
             GalleryImages::create([
-                'image' => $imagePath,
                 'gallery_id' => $gallery->id,
+                'image'      => 'gallery/images/' . $filename,
             ]);
         }
 
@@ -193,34 +296,38 @@ class AdminController extends Controller
     public function galleryUpdate(Request $request, Galary $galary)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'preview_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
+            'name'              => 'required|string|max:255',
+            'category_id'       => 'required|exists:gallery_categories,id',
             'short_description' => 'nullable|string|max:255',
+            'images'            => 'nullable|array',
+            'images.*'          => 'image|mimes:jpeg,png,jpg,webp|max:10240',
         ]);
 
-        $data = [
-            'name' => $request->name,
+        $galary->update([
+            'name'              => $request->name,
+            'category_id'       => $request->category_id,
             'short_description' => $request->short_description,
-        ];
+        ]);
 
-        if ($request->hasFile('preview_image')) {
-            if ($galary->preview_image && Storage::disk('public')->exists($galary->preview_image)) {
-                Storage::disk('public')->delete($galary->preview_image);
-            }
-            $data['preview_image'] = $request->file('preview_image')->store('gallery/previews', 'public');
-        }
-
-        $galary->update($data);
-
-        // Add new images if provided
         if ($request->hasFile('images')) {
+            if (!file_exists(storage_path('app/public/gallery/images'))) {
+                mkdir(storage_path('app/public/gallery/images'), 0755, true);
+            }
+
+            $manager = new ImageManager(new Driver());
+
             foreach ($request->file('images') as $image) {
-                $imagePath = $image->store('gallery/images', 'public');
+                $filename = time() . '_' . uniqid() . '.jpg';
+                $savePath = storage_path('app/public/gallery/images/' . $filename);
+
+                $manager->read($image)
+                    ->scaleDown(width: 1200)
+                    ->toJpeg(quality: 75)
+                    ->save($savePath);
+
                 GalleryImages::create([
-                    'image' => $imagePath,
                     'gallery_id' => $galary->id,
+                    'image'      => 'gallery/images/' . $filename,
                 ]);
             }
         }
@@ -230,19 +337,13 @@ class AdminController extends Controller
 
     public function galleryDelete(Galary $galary)
     {
-        // Delete preview image
-        if ($galary->preview_image && Storage::disk('public')->exists($galary->preview_image)) {
-            Storage::disk('public')->delete($galary->preview_image);
-        }
-
-        // Delete all gallery images from storage
         foreach ($galary->images as $image) {
             if (Storage::disk('public')->exists($image->image)) {
                 Storage::disk('public')->delete($image->image);
             }
         }
 
-        $galary->delete(); // cascade deletes gallery_images rows
+        $galary->delete();
 
         return redirect()->route('admin.gallery.index')->with('success', 'Gallery deleted successfully!');
     }
