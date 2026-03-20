@@ -145,8 +145,8 @@ class FrontendFrontendController extends Controller
 
     public function results()
     {
-        $results= Result::orderBy('id', 'desc')->get();
-        return view('frontend.results', ['results'=>$results]);
+        $results = Result::orderBy('id', 'desc')->get();
+        return view('frontend.results', ['results' => $results]);
     }
 
     public function houseSystem()
@@ -156,17 +156,22 @@ class FrontendFrontendController extends Controller
 
     public function interHouseCompetitions()
     {
-        return view('frontend.inter-house-competitions');
+        $events = Event::where('event_type', 'inter-house-competitions')->latest()->get();
+
+        return view('frontend.inter-house-competitions', compact('events'));
     }
 
     public function interHouseSports()
     {
-        return view('frontend.inter-house-sports');
+        $events = Event::where('event_type', 'inter-house-sports')->latest()->get();
+
+        return view('frontend.inter-house-sports', compact('events'));
     }
 
     public function schoolEvents()
     {
-        $events = Event::latest()->get();
+        $events = Event::where('event_type', 'school-events')->latest()->get();
+
         return view('frontend.school-events', compact('events'));
     }
 

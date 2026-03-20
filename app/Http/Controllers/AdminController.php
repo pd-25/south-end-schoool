@@ -13,6 +13,10 @@ use App\Models\Result;
 use App\Models\LatestNews;
 use App\Models\Career;
 use Illuminate\Http\Request;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Image as InterventionImage;
 
 class AdminController extends Controller
 {
@@ -70,8 +74,8 @@ class AdminController extends Controller
         ];
 
         if ($request->hasFile('photo')) {
-            if ($teacher->photo && \Storage::disk('public')->exists($teacher->photo)) {
-                \Storage::disk('public')->delete($teacher->photo);
+            if ($teacher->photo && Storage::disk('public')->exists($teacher->photo)) {
+                Storage::disk('public')->delete($teacher->photo);
             }
             $data['photo'] = $request->file('photo')->store('teachers', 'public');
         }
@@ -83,8 +87,8 @@ class AdminController extends Controller
 
     public function teacherDelete(Teacher $teacher)
     {
-        if ($teacher->photo && \Storage::disk('public')->exists($teacher->photo)) {
-            \Storage::disk('public')->delete($teacher->photo);
+        if ($teacher->photo && Storage::disk('public')->exists($teacher->photo)) {
+            Storage::disk('public')->delete($teacher->photo);
         }
 
         $teacher->delete();
@@ -127,8 +131,8 @@ class AdminController extends Controller
         $data = ['name' => $request->name];
 
         if ($request->hasFile('image')) {
-            if ($topper->image && \Storage::disk('public')->exists($topper->image)) {
-                \Storage::disk('public')->delete($topper->image);
+            if ($topper->image && Storage::disk('public')->exists($topper->image)) {
+                Storage::disk('public')->delete($topper->image);
             }
             $data['image'] = $request->file('image')->store('toppers', 'public');
         }
@@ -140,8 +144,8 @@ class AdminController extends Controller
 
     public function topperDelete(Topper $topper)
     {
-        if ($topper->image && \Storage::disk('public')->exists($topper->image)) {
-            \Storage::disk('public')->delete($topper->image);
+        if ($topper->image && Storage::disk('public')->exists($topper->image)) {
+            Storage::disk('public')->delete($topper->image);
         }
 
         $topper->delete();
@@ -202,8 +206,8 @@ class AdminController extends Controller
         ];
 
         if ($request->hasFile('preview_image')) {
-            if ($galary->preview_image && \Storage::disk('public')->exists($galary->preview_image)) {
-                \Storage::disk('public')->delete($galary->preview_image);
+            if ($galary->preview_image && Storage::disk('public')->exists($galary->preview_image)) {
+                Storage::disk('public')->delete($galary->preview_image);
             }
             $data['preview_image'] = $request->file('preview_image')->store('gallery/previews', 'public');
         }
@@ -227,14 +231,14 @@ class AdminController extends Controller
     public function galleryDelete(Galary $galary)
     {
         // Delete preview image
-        if ($galary->preview_image && \Storage::disk('public')->exists($galary->preview_image)) {
-            \Storage::disk('public')->delete($galary->preview_image);
+        if ($galary->preview_image && Storage::disk('public')->exists($galary->preview_image)) {
+            Storage::disk('public')->delete($galary->preview_image);
         }
 
         // Delete all gallery images from storage
         foreach ($galary->images as $image) {
-            if (\Storage::disk('public')->exists($image->image)) {
-                \Storage::disk('public')->delete($image->image);
+            if (Storage::disk('public')->exists($image->image)) {
+                Storage::disk('public')->delete($image->image);
             }
         }
 
@@ -245,8 +249,8 @@ class AdminController extends Controller
 
     public function galleryImageDelete(GalleryImages $galleryImage)
     {
-        if (\Storage::disk('public')->exists($galleryImage->image)) {
-            \Storage::disk('public')->delete($galleryImage->image);
+        if (Storage::disk('public')->exists($galleryImage->image)) {
+            Storage::disk('public')->delete($galleryImage->image);
         }
 
         $galleryImage->delete();
@@ -303,15 +307,15 @@ class AdminController extends Controller
         ];
 
         if ($request->hasFile('image')) {
-            if ($noticeBoard->image && \Storage::disk('public')->exists($noticeBoard->image)) {
-                \Storage::disk('public')->delete($noticeBoard->image);
+            if ($noticeBoard->image && Storage::disk('public')->exists($noticeBoard->image)) {
+                Storage::disk('public')->delete($noticeBoard->image);
             }
             $data['image'] = $request->file('image')->store('noticeboard', 'public');
         }
 
         if ($request->hasFile('pdf')) {
-            if ($noticeBoard->pdf && \Storage::disk('public')->exists($noticeBoard->pdf)) {
-                \Storage::disk('public')->delete($noticeBoard->pdf);
+            if ($noticeBoard->pdf && Storage::disk('public')->exists($noticeBoard->pdf)) {
+                Storage::disk('public')->delete($noticeBoard->pdf);
             }
             $data['pdf'] = $request->file('pdf')->store('noticeboard/pdfs', 'public');
         }
@@ -323,12 +327,12 @@ class AdminController extends Controller
 
     public function noticeBoardDelete(NoticeBoard $noticeBoard)
     {
-        if ($noticeBoard->image && \Storage::disk('public')->exists($noticeBoard->image)) {
-            \Storage::disk('public')->delete($noticeBoard->image);
+        if ($noticeBoard->image && Storage::disk('public')->exists($noticeBoard->image)) {
+            Storage::disk('public')->delete($noticeBoard->image);
         }
 
-        if ($noticeBoard->pdf && \Storage::disk('public')->exists($noticeBoard->pdf)) {
-            \Storage::disk('public')->delete($noticeBoard->pdf);
+        if ($noticeBoard->pdf && Storage::disk('public')->exists($noticeBoard->pdf)) {
+            Storage::disk('public')->delete($noticeBoard->pdf);
         }
 
         $noticeBoard->delete();
@@ -347,18 +351,37 @@ class AdminController extends Controller
     public function eventStore(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
+            'title'       => 'required|string|max:255',
             'description' => 'required|string',
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'image'       => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'event_date'  => 'required|date',
+            'event_type'  => 'required|string',
+            'allowed'     => 'required|string',
         ]);
 
-        $imagePath = $request->file('image')->store('events', 'public');
+        // Intervention Image v3 — no facade needed
+        $image    = $request->file('image');
+        $filename = time() . '_' . uniqid() . '.jpg';
+        $savePath = storage_path('app/public/events/' . $filename);
+
+        // Make sure folder exists
+        if (!file_exists(storage_path('app/public/events'))) {
+            mkdir(storage_path('app/public/events'), 0755, true);
+        }
+
+        $manager = new ImageManager(new Driver());
+        $manager->read($image)
+            ->scaleDown(width: 1200)
+            ->toJpeg(quality: 75)
+            ->save($savePath);
 
         Event::create([
-            'title' => $request->title,
+            'title'       => $request->title,
             'description' => $request->description,
-            'image' => $imagePath,
-            'event_date' => $request->event_date,
+            'image'       => 'events/' . $filename,
+            'event_date'  => $request->event_date,
+            'event_type'  => $request->event_type,
+            'allowed'     => $request->allowed,
         ]);
 
         return redirect()->route('admin.events.index')->with('success', 'Event added successfully!');
@@ -367,22 +390,44 @@ class AdminController extends Controller
     public function eventUpdate(Request $request, Event $event)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
+            'title'       => 'required|string|max:255',
             'description' => 'required|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'event_date'  => 'required|date',
+            'event_type'  => 'required|string',
+            'allowed'     => 'required|string',
         ]);
 
         $data = [
-            'title' => $request->title,
+            'title'       => $request->title,
             'description' => $request->description,
-            'event_date' => $request->event_date,
+            'event_date'  => $request->event_date,
+            'event_type'  => $request->event_type,
+            'allowed'     => $request->allowed,
         ];
 
         if ($request->hasFile('image')) {
-            if ($event->image && \Storage::disk('public')->exists($event->image)) {
-                \Storage::disk('public')->delete($event->image);
+            // Delete old image
+            if ($event->image && Storage::disk('public')->exists($event->image)) {
+                Storage::disk('public')->delete($event->image);
             }
-            $data['image'] = $request->file('image')->store('events', 'public');
+
+            // Compress & resize new image
+            $image    = $request->file('image');
+            $filename = time() . '_' . uniqid() . '.jpg';
+            $savePath = storage_path('app/public/events/' . $filename);
+
+            if (!file_exists(storage_path('app/public/events'))) {
+                mkdir(storage_path('app/public/events'), 0755, true);
+            }
+
+            $manager = new ImageManager(new Driver());
+            $manager->read($image)
+                ->scaleDown(width: 1200)
+                ->toJpeg(quality: 75)
+                ->save($savePath);
+
+            $data['image'] = 'events/' . $filename;
         }
 
         $event->update($data);
@@ -392,8 +437,8 @@ class AdminController extends Controller
 
     public function eventDelete(Event $event)
     {
-        if ($event->image && \Storage::disk('public')->exists($event->image)) {
-            \Storage::disk('public')->delete($event->image);
+        if ($event->image && Storage::disk('public')->exists($event->image)) {
+            Storage::disk('public')->delete($event->image);
         }
 
         $event->delete();
@@ -436,8 +481,8 @@ class AdminController extends Controller
         $data = ['title' => $request->title];
 
         if ($request->hasFile('pdf')) {
-            if ($syllabus->pdf && \Storage::disk('public')->exists($syllabus->pdf)) {
-                \Storage::disk('public')->delete($syllabus->pdf);
+            if ($syllabus->pdf && Storage::disk('public')->exists($syllabus->pdf)) {
+                Storage::disk('public')->delete($syllabus->pdf);
             }
             $data['pdf'] = $request->file('pdf')->store('syllabus', 'public');
         }
@@ -449,8 +494,8 @@ class AdminController extends Controller
 
     public function syllabusDelete(Syllabus $syllabus)
     {
-        if ($syllabus->pdf && \Storage::disk('public')->exists($syllabus->pdf)) {
-            \Storage::disk('public')->delete($syllabus->pdf);
+        if ($syllabus->pdf && Storage::disk('public')->exists($syllabus->pdf)) {
+            Storage::disk('public')->delete($syllabus->pdf);
         }
 
         $syllabus->delete();
@@ -493,8 +538,8 @@ class AdminController extends Controller
         $data = ['title' => $request->title];
 
         if ($request->hasFile('pdf')) {
-            if ($result->pdf && \Storage::disk('public')->exists($result->pdf)) {
-                \Storage::disk('public')->delete($result->pdf);
+            if ($result->pdf && Storage::disk('public')->exists($result->pdf)) {
+                Storage::disk('public')->delete($result->pdf);
             }
             $data['pdf'] = $request->file('pdf')->store('results', 'public');
         }
@@ -506,8 +551,8 @@ class AdminController extends Controller
 
     public function resultDelete(Result $result)
     {
-        if ($result->pdf && \Storage::disk('public')->exists($result->pdf)) {
-            \Storage::disk('public')->delete($result->pdf);
+        if ($result->pdf && Storage::disk('public')->exists($result->pdf)) {
+            Storage::disk('public')->delete($result->pdf);
         }
 
         $result->delete();

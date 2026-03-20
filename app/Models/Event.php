@@ -10,6 +10,8 @@ class Event extends Model
         'title',
         'description',
         'image',
-        'event_date'
+        'event_date',
+        'event_type',
+        'allowed'
     ];
 }

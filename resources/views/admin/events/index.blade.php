@@ -32,6 +32,8 @@
                     <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">#</th>
                     <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">Image</th>
                     <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">Title</th>
+                    <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">Type</th>
+                    <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">Allowed</th>
                     <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">Description</th>
                     <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">Event Date</th>
                     <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">Created</th>
@@ -47,6 +49,22 @@
                     </td>
                     <td class="py-3">
                         <p class="mb-0 fw-bold">{{ $event->title }}</p>
+                    </td>
+                    @if($event->event_type == 'inter-house-competitions')
+                    <td class="py-3">
+                        <p class="mb-0 badge bg-secondary text-secondary bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-bold">Inter-House Competitions</p>
+                    </td>
+                    @elseif($event->event_type == 'inter-house-sports')
+                    <td class="py-3">
+                        <p class="mb-0 badge bg-warning text-warning bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-bold">Inter-House Sports</p>
+                    </td>
+                    @elseif($event->event_type == 'school-events')
+                    <td class="py-3">
+                        <p class="mb-0 badge bg-success text-success bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-bold">School Events</p>
+                    </td>
+                    @endif
+                    <td class="py-3">
+                        <p class="mb-0 fw-bold">{{ $event->allowed }}</p>
                     </td>
                     <td class="py-3 text-muted" style="max-width: 300px;">
                         <p class="mb-0 text-truncate" title="{{ $event->description }}">{{ Str::limit($event->description, 80) }}</p>
@@ -127,12 +145,39 @@
                             @enderror
                         </div>
                         <div class="col-md-12">
-                            <label class="form-label fw-medium small text-muted">Event Date <span class="text-danger">*</span></label>
+                            <label class="form-label fw-medium small text-muted">Schedule In (eg. Date) <span class="text-danger">*</span></label>
                             <div class="input-group bg-light rounded-3 border">
                                 <span class="input-group-text bg-transparent border-0"><i class="fa fa-calendar text-muted small"></i></span>
                                 <input type="date" class="form-control bg-transparent border-0 py-2" name="event_date" value="{{ old('event_date') }}" required>
                             </div>
                             @error('event_date')
+                            <span class="text-danger small mt-1">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-medium small text-muted">Event Type <span class="text-danger">*</span></label>
+                            <div class="input-group bg-light rounded-3 border">
+                                <span class="input-group-text bg-transparent border-0"><i class="fa-solid fa-angle-down text-muted small"></i></span>
+                                <select class="form-select bg-transparent border-0 py-2" name="event_type" required>
+                                    <option value="" selected>Select Event Type</option>
+                                    <option value="inter-house-competitions" {{ old('event_type') == 'inter-house-competitions' ? 'selected' : '' }}>Inter-House Competitions</option>
+                                    <option value="inter-house-sports" {{ old('event_type') == 'inter-house-sports' ? 'selected' : '' }}>Inter-House Sports</option>
+                                    <option value="school-events" {{ old('event_type') == 'school-events' ? 'selected' : '' }}>School Events</option>
+                                </select>
+                            </div>
+                            @error('event_type')
+                            <span class="text-danger small mt-1">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-medium small text-muted">Participation Allowed (eg. Class 1, 2, 3..) <span class="text-danger">*</span></label>
+                            <div class="input-group bg-light rounded-3 border">
+                                <span class="input-group-text bg-transparent border-0"><i class="fa fa-user text-muted small"></i></span>
+                                <input type="text" class="form-control bg-transparent border-0 py-2" name="allowed" value="{{ old('allowed') }}" required>
+                            </div>
+                            @error('allowed')
                             <span class="text-danger small mt-1">{{ $message }}</span>
                             @enderror
                         </div>
@@ -214,6 +259,28 @@
                             @error('event_date')
                             <span class="text-danger small mt-1">{{ $message }}</span>
                             @enderror
+                        </div>
+
+                        <!-- Event Type -->
+                        <div class="col-md-12">
+                            <label class="form-label fw-medium small text-muted">Event Type <span class="text-danger">*</span></label>
+                            <div class="input-group bg-light rounded-3 border">
+                                <span class="input-group-text bg-transparent border-0"><i class="fa fa-user text-muted small"></i></span>
+                                <select class="form-select bg-transparent border-0 py-2" name="event_type" required>
+                                    <option value="inter-house-competitions" {{ $event->event_type == 'inter-house-competitions' ? 'selected' : '' }}>Inter-House Competitions</option>
+                                    <option value="inter-house-sports" {{ $event->event_type == 'inter-house-sports' ? 'selected' : '' }}>Inter-House Sports</option>
+                                    <option value="school-events" {{ $event->event_type == 'school-events' ? 'selected' : '' }}>School Events</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Allowed -->
+                        <div class="col-md-12">
+                            <label class="form-label fw-medium small text-muted">Participation Allowed (eg. Class 1, 2, 3..) <span class="text-danger">*</span></label>
+                            <div class="input-group bg-light rounded-3 border">
+                                <span class="input-group-text bg-transparent border-0"><i class="fa fa-user text-muted small"></i></span>
+                                <input type="text" class="form-control bg-transparent border-0 py-2" name="allowed" value="{{ $event->allowed }}" required>
+                            </div>
                         </div>
 
 
