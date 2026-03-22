@@ -177,9 +177,13 @@ class FrontendFrontendController extends Controller
 
     public function pictureGallery()
     {
-        $pictureGalleries = Galary::latest()->get();
+        $pictureGalleries = Galary::with(['category', 'images' => fn($q) => $q->limit(1)])
+            ->latest()
+            ->get();
+
         return view('frontend.picture-gallery', compact('pictureGalleries'));
     }
+
 
     public function singleGallery($id)
     {

@@ -245,9 +245,13 @@ class AdminController extends Controller
         return redirect()->route('admin.gallery.category.index')->with('success', 'Category deleted successfully!');
     }
 
+    // ─────────────────────────────────────────────
+    // Gallery CRUD
+    // ─────────────────────────────────────────────
+
     public function galleryList()
     {
-        $categories = GalleryCategory::get();
+        $categories = GalleryCategory::orderBy('name')->get();
         $galleries  = Galary::with('category')->withCount('images')->latest()->paginate(10);
 
         return view('admin.gallery.index', compact('galleries', 'categories'));
@@ -269,28 +273,10 @@ class AdminController extends Controller
             'short_description' => $request->short_description,
         ]);
 
-        if (!file_exists(storage_path('app/public/gallery/images'))) {
-            mkdir(storage_path('app/public/gallery/images'), 0755, true);
-        }
+        $this->storeGalleryImages($request->file('images'), $gallery->id);
 
-        $manager = new ImageManager(new Driver());
-
-        foreach ($request->file('images') as $image) {
-            $filename = time() . '_' . uniqid() . '.jpg';
-            $savePath = storage_path('app/public/gallery/images/' . $filename);
-
-            $manager->read($image)
-                ->scaleDown(width: 1200)
-                ->toJpeg(quality: 75)
-                ->save($savePath);
-
-            GalleryImages::create([
-                'gallery_id' => $gallery->id,
-                'image'      => 'gallery/images/' . $filename,
-            ]);
-        }
-
-        return redirect()->route('admin.gallery.index')->with('success', 'Gallery created successfully!');
+        return redirect()->route('admin.gallery.index')
+            ->with('success', 'Gallery created successfully!');
     }
 
     public function galleryUpdate(Request $request, Galary $galary)
@@ -310,29 +296,11 @@ class AdminController extends Controller
         ]);
 
         if ($request->hasFile('images')) {
-            if (!file_exists(storage_path('app/public/gallery/images'))) {
-                mkdir(storage_path('app/public/gallery/images'), 0755, true);
-            }
-
-            $manager = new ImageManager(new Driver());
-
-            foreach ($request->file('images') as $image) {
-                $filename = time() . '_' . uniqid() . '.jpg';
-                $savePath = storage_path('app/public/gallery/images/' . $filename);
-
-                $manager->read($image)
-                    ->scaleDown(width: 1200)
-                    ->toJpeg(quality: 75)
-                    ->save($savePath);
-
-                GalleryImages::create([
-                    'gallery_id' => $galary->id,
-                    'image'      => 'gallery/images/' . $filename,
-                ]);
-            }
+            $this->storeGalleryImages($request->file('images'), $galary->id);
         }
 
-        return redirect()->route('admin.gallery.index')->with('success', 'Gallery updated successfully!');
+        return redirect()->route('admin.gallery.index')
+            ->with('success', 'Gallery updated successfully!');
     }
 
     public function galleryDelete(Galary $galary)
@@ -345,7 +313,8 @@ class AdminController extends Controller
 
         $galary->delete();
 
-        return redirect()->route('admin.gallery.index')->with('success', 'Gallery deleted successfully!');
+        return redirect()->route('admin.gallery.index')
+            ->with('success', 'Gallery deleted successfully!');
     }
 
     public function galleryImageDelete(GalleryImages $galleryImage)
@@ -357,6 +326,36 @@ class AdminController extends Controller
         $galleryImage->delete();
 
         return back()->with('success', 'Image removed successfully!');
+    }
+
+    // ─────────────────────────────────────────────
+    // Private helper
+    // ─────────────────────────────────────────────
+
+    private function storeGalleryImages(array $files, int $galleryId): void
+    {
+        $dir = storage_path('app/public/gallery/images');
+
+        if (!file_exists($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $manager = new ImageManager(new Driver());
+
+        foreach ($files as $file) {
+            $filename = time() . '_' . uniqid() . '.jpg';
+            $savePath = $dir . '/' . $filename;
+
+            $manager->read($file)
+                ->scaleDown(width: 1200)
+                ->toJpeg(quality: 75)
+                ->save($savePath);
+
+            GalleryImages::create([
+                'gallery_id' => $galleryId,
+                'image'      => 'gallery/images/' . $filename,
+            ]);
+        }
     }
 
     // ─── Notice Board ───────────────────────────────

@@ -26,26 +26,34 @@
             </div>
             <hr>
             <div class="row mt-5">
-              @forelse ($pictureGalleries as $pictureGalleries)
-                <div class="col-lg-4 mb-4">
-                    <div class="gallery-box text-center">
-                        <img src="{{ asset('storage/' . $pictureGalleries->preview_image) }}" class="img-fluid mb-lg-4">
-                        <h3>{{ $pictureGalleries->name }}</h3>
-                        <p>{{ $pictureGalleries->short_description }}</p>
-                        <a href="{{ route('activities.single_gallery', $pictureGalleries->id) }}" class="rmBtn mr-0 mb-4">View All Images</a>
-                    </div>
-                </div>
-                
-              @empty
-                <div class="col-lg-4 mb-4">
-                    <div class="gallery-box text-center">
-                        <img src="{{ asset('frontend-asset/images/gallery/gallery-pic1.jpg') }}" class="img-fluid mb-lg-4">
-                        <h3>No Gallery Found</h3>
-                        <p>No gallery images are available at the moment.</p>
-                        {{-- <a href="single-gallery.html" class="rmBtn mr-0 mb-4">View All Images</a> --}}
-                    </div>
-                </div>
-              @endforelse
+              @forelse ($pictureGalleries as $gallery)
+    <div class="col-lg-4 mb-4">
+        <div class="gallery-box text-center">
+            @if ($gallery->category->first())
+                <img src="{{ asset('storage/' . $gallery->category->first()->image) }}" class="img-fluid mb-lg-4" alt="{{ $gallery->name }}">
+            @else
+                <img src="{{ asset('frontend-asset/images/gallery/gallery-pic1.jpg') }}" class="img-fluid mb-lg-4" alt="{{ $gallery->name }}">
+            @endif
+ 
+            {{-- Category badge --}}
+            @if ($gallery->category)
+                <span class="badge mb-2">{{ $gallery->category->name }}</span>
+            @endif
+ 
+            <h3>{{ $gallery->name }}</h3>
+            <p>{{ $gallery->short_description }}</p>
+            <a href="{{ route('activities.single_gallery', $gallery->id) }}" class="rmBtn mr-0 mb-4">View All Images</a>
+        </div>
+    </div>
+@empty
+    <div class="col-lg-4 mb-4">
+        <div class="gallery-box text-center">
+            <img src="{{ asset('frontend-asset/images/gallery/gallery-pic1.jpg') }}" class="img-fluid mb-lg-4">
+            <h3>No Gallery Found</h3>
+            <p>No gallery images are available at the moment.</p>
+        </div>
+    </div>
+@endforelse
                 
                 {{-- <div class="col-lg-4 mb-4">
                     <div class="gallery-box text-center">

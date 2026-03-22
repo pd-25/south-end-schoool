@@ -34,15 +34,21 @@
                         style="transition: transform 0.3s ease, box-shadow 0.3s ease;">
                         <div class="position-relative" style="cursor: pointer;" data-bs-toggle="modal"
                             data-bs-target="#viewGalleryModal{{ $gallery->id }}">
-                            <img src="{{ asset('storage/' . $gallery->preview_image) }}" class="w-100"
-                                style="height: 200px; object-fit: cover;" alt="{{ $gallery->name }}">
+                            @if ($gallery->images->first())
+                                <img src="{{ asset('storage/' . $gallery->images->first()->image) }}" class="w-100"
+                                    style="height: 200px; object-fit: cover;" alt="{{ $gallery->name }}">
+                            @else
+                                <div class="w-100 d-flex align-items-center justify-content-center bg-light"
+                                    style="height: 200px;">
+                                    <i class="fa fa-images text-muted" style="font-size: 2.5rem; opacity: 0.3;"></i>
+                                </div>
+                            @endif
                             <div class="position-absolute bottom-0 start-0 w-100 p-3"
                                 style="background: linear-gradient(transparent, rgba(0,0,0,0.7));">
                                 <span class="badge bg-white bg-opacity-25 text-white rounded-pill px-3 py-1 small">
                                     <i class="fa fa-images me-1"></i> {{ $gallery->images_count }}
                                     {{ Str::plural('photo', $gallery->images_count) }}
                                 </span>
-                                {{-- Category Badge --}}
                                 @if ($gallery->category)
                                     <span class="badge bg-primary bg-opacity-75 text-white rounded-pill px-3 py-1 small ms-1">
                                         <i class="fa fa-folder me-1"></i> {{ $gallery->category->name }}
@@ -114,7 +120,7 @@
                 <div class="modal-header border-0 px-4 pt-4 pb-0">
                     <div>
                         <h5 class="modal-title fw-bold" id="addGalleryModalLabel">Create New Gallery</h5>
-                        <p class="text-muted small mb-0">Add a gallery with a name, preview image, and photos.</p>
+                        <p class="text-muted small mb-0">Add a gallery with a name and photos.</p>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -131,11 +137,10 @@
                                         placeholder="e.g. Annual Day 2026" value="{{ old('name') }}" required>
                                 </div>
                                 @error('name')
-                                    <span class="text-danger small mt-1">{{ $message }}</span>
+                                    <span class="text-danger small mt-1 d-block">{{ $message }}</span>
                                 @enderror
                             </div>
 
-                            {{-- Category Dropdown --}}
                             <div class="col-md-12">
                                 <label class="form-label fw-medium small text-muted">Category <span class="text-danger">*</span></label>
                                 <div class="input-group bg-light rounded-3 border">
@@ -150,7 +155,7 @@
                                     </select>
                                 </div>
                                 @error('category_id')
-                                    <span class="text-danger small mt-1">{{ $message }}</span>
+                                    <span class="text-danger small mt-1 d-block">{{ $message }}</span>
                                 @enderror
                             </div>
 
@@ -162,30 +167,30 @@
                                         placeholder="e.g. Highlights from Annual Day" value="{{ old('short_description') }}" required>
                                 </div>
                                 @error('short_description')
-                                    <span class="text-danger small mt-1">{{ $message }}</span>
+                                    <span class="text-danger small mt-1 d-block">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <div class="col-md-12">
                                 <label class="form-label fw-medium small text-muted">Gallery Photos <span class="text-danger">*</span></label>
-                                <div class="upload-area p-4 rounded-4 text-center" id="multiUploadArea"
+                                <div class="upload-area p-4 rounded-4 text-center" id="addUploadArea"
                                     style="border: 2px dashed #d1d5db; cursor: pointer; transition: all 0.3s ease;">
-                                    <input type="file" name="images[]" id="multiInput" class="d-none" accept="image/*" multiple required>
-                                    <div id="multiPlaceholder">
+                                    <input type="file" name="images[]" id="addImagesInput" class="d-none" accept="image/*" multiple required>
+                                    <div id="addPlaceholder">
                                         <i class="fa fa-cloud-upload-alt text-muted mb-2" style="font-size: 2rem; opacity: 0.5;"></i>
                                         <p class="text-muted small mb-0 fw-medium">Click to upload gallery photos</p>
                                         <p class="text-muted small mb-0" style="font-size: 11px;">Select multiple images (JPEG, PNG, JPG, WEBP)</p>
                                     </div>
-                                    <div id="multiPreviewDiv" class="d-none">
-                                        <div id="multiPreviewGrid" class="d-flex flex-wrap gap-2 justify-content-center"></div>
-                                        <p class="text-muted small mt-2 mb-0 fw-medium" id="multiFileCount"></p>
+                                    <div id="addPreviewDiv" class="d-none">
+                                        <div id="addPreviewGrid" class="d-flex flex-wrap gap-2 justify-content-center"></div>
+                                        <p class="text-muted small mt-2 mb-0 fw-medium" id="addFileCount"></p>
                                     </div>
                                 </div>
                                 @error('images')
-                                    <span class="text-danger small mt-1">{{ $message }}</span>
+                                    <span class="text-danger small mt-1 d-block">{{ $message }}</span>
                                 @enderror
                                 @error('images.*')
-                                    <span class="text-danger small mt-1">{{ $message }}</span>
+                                    <span class="text-danger small mt-1 d-block">{{ $message }}</span>
                                 @enderror
                             </div>
 
@@ -270,7 +275,6 @@
                                     </div>
                                 </div>
 
-                                {{-- Category Dropdown --}}
                                 <div class="col-md-12">
                                     <label class="form-label fw-medium small text-muted">Category <span class="text-danger">*</span></label>
                                     <div class="input-group bg-light rounded-3 border">
@@ -300,18 +304,20 @@
                                 @if ($gallery->images->count())
                                     <div class="col-md-12">
                                         <label class="form-label fw-medium small text-muted">Current Photos</label>
-                                        <div class="d-flex flex-wrap gap-2">
+                                        <div class="d-flex flex-wrap gap-2" id="currentPhotos{{ $gallery->id }}">
                                             @foreach ($gallery->images as $image)
-                                                <div class="position-relative" style="width: 80px; height: 80px;">
+                                                <div class="position-relative gallery-img-wrapper" id="imgWrapper{{ $image->id }}"
+                                                    style="width: 80px; height: 80px;">
                                                     <img src="{{ asset('storage/' . $image->image) }}"
                                                         class="w-100 h-100 rounded-3 shadow-sm" style="object-fit: cover;">
-                                                    <a href="#"
+                                                    <button type="button"
                                                         class="btn btn-danger btn-sm rounded-circle d-flex align-items-center justify-content-center position-absolute top-0 end-0 delete-gallery-image-btn"
                                                         style="width: 22px; height: 22px; padding: 0; font-size: 10px; margin: -6px -6px 0 0;"
                                                         title="Remove image"
-                                                        data-delete-url="{{ route('admin.gallery.image.delete', $image->id) }}">
+                                                        data-delete-url="{{ route('admin.gallery.image.delete', $image->id) }}"
+                                                        data-image-id="{{ $image->id }}">
                                                         <i class="fa fa-times"></i>
-                                                    </a>
+                                                    </button>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -319,7 +325,8 @@
                                 @endif
 
                                 <div class="col-md-12">
-                                    <label class="form-label fw-medium small text-muted">Add More Photos <span class="text-muted">(Optional)</span></label>
+                                    <label class="form-label fw-medium small text-muted">Add More Photos
+                                        <span class="text-muted">(Optional)</span></label>
                                     <input type="file" name="images[]" class="form-control rounded-3 py-2" accept="image/*" multiple>
                                     <p class="text-muted small mt-1 mb-0" style="font-size: 11px;">Select multiple images to add to this gallery</p>
                                 </div>
@@ -376,94 +383,93 @@
 @endsection
 
 @push('scripts')
-    <script>
-        // Preview image upload
-        const previewUploadArea = document.getElementById('previewUploadArea');
-        const previewInput      = document.getElementById('previewInput');
-        const previewPlaceholder  = document.getElementById('previewPlaceholder');
-        const previewPreviewDiv   = document.getElementById('previewPreviewDiv');
-        const previewPreviewImg   = document.getElementById('previewPreviewImg');
-        const previewFileName     = document.getElementById('previewFileName');
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
 
-        previewUploadArea.addEventListener('click', () => previewInput.click());
-        previewInput.addEventListener('change', (e) => {
-            if (e.target.files.length) showSinglePreview(e.target.files[0]);
-        });
+        // ── Add Gallery: multi-image upload preview ──────────────────
+        const addUploadArea  = document.getElementById('addUploadArea');
+        const addImagesInput = document.getElementById('addImagesInput');
+        const addPlaceholder = document.getElementById('addPlaceholder');
+        const addPreviewDiv  = document.getElementById('addPreviewDiv');
+        const addPreviewGrid = document.getElementById('addPreviewGrid');
+        const addFileCount   = document.getElementById('addFileCount');
 
-        function showSinglePreview(file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                previewPreviewImg.src = e.target.result;
-                previewFileName.textContent = file.name;
-                previewPlaceholder.classList.add('d-none');
-                previewPreviewDiv.classList.remove('d-none');
-            };
-            reader.readAsDataURL(file);
-        }
+        addUploadArea.addEventListener('click', () => addImagesInput.click());
 
-        // Multi image upload
-        const multiUploadArea  = document.getElementById('multiUploadArea');
-        const multiInput       = document.getElementById('multiInput');
-        const multiPlaceholder = document.getElementById('multiPlaceholder');
-        const multiPreviewDiv  = document.getElementById('multiPreviewDiv');
-        const multiPreviewGrid = document.getElementById('multiPreviewGrid');
-        const multiFileCount   = document.getElementById('multiFileCount');
-
-        multiUploadArea.addEventListener('click', () => multiInput.click());
-        multiInput.addEventListener('change', (e) => {
-            if (e.target.files.length) showMultiPreview(e.target.files);
-        });
-
-        function showMultiPreview(files) {
-            multiPreviewGrid.innerHTML = '';
-            Array.from(files).forEach(file => {
+        addImagesInput.addEventListener('change', function () {
+            if (!this.files.length) return;
+            addPreviewGrid.innerHTML = '';
+            Array.from(this.files).forEach(file => {
                 const reader = new FileReader();
-                reader.onload = (e) => {
+                reader.onload = e => {
                     const img = document.createElement('img');
                     img.src = e.target.result;
                     img.className = 'rounded-3 shadow-sm';
-                    img.style.cssText = 'width: 80px; height: 80px; object-fit: cover;';
-                    multiPreviewGrid.appendChild(img);
+                    img.style.cssText = 'width:80px;height:80px;object-fit:cover;';
+                    addPreviewGrid.appendChild(img);
                 };
                 reader.readAsDataURL(file);
             });
-            multiFileCount.textContent = files.length + ' ' + (files.length === 1 ? 'photo' : 'photos') + ' selected';
-            multiPlaceholder.classList.add('d-none');
-            multiPreviewDiv.classList.remove('d-none');
-        }
+            addFileCount.textContent = this.files.length + ' ' + (this.files.length === 1 ? 'photo' : 'photos') + ' selected';
+            addPlaceholder.classList.add('d-none');
+            addPreviewDiv.classList.remove('d-none');
+        });
 
-        // Auto-open modal if validation errors exist
+        // ── Auto-open Add modal on validation errors ─────────────────
         @if ($errors->any())
-            document.addEventListener('DOMContentLoaded', function () {
-                var modal = new bootstrap.Modal(document.getElementById('addGalleryModal'));
-                modal.show();
-            });
+            var addModal = new bootstrap.Modal(document.getElementById('addGalleryModal'));
+            addModal.show();
         @endif
 
-        // Gallery image delete via hidden form
+        // ── Delete individual gallery image (AJAX, removes DOM node) ─
         document.querySelectorAll('.delete-gallery-image-btn').forEach(btn => {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
-                if (confirm('Remove this image?')) {
-                    const form = document.getElementById('deleteGalleryImageForm');
-                    form.action = this.getAttribute('data-delete-url');
-                    form.submit();
-                }
+
+                if (!confirm('Remove this image?')) return;
+
+                const url     = this.getAttribute('data-delete-url');
+                const imageId = this.getAttribute('data-image-id');
+                const wrapper = document.getElementById('imgWrapper' + imageId);
+                const form    = document.getElementById('deleteGalleryImageForm');
+
+                // Get CSRF token from the hidden form
+                const csrf = form.querySelector('input[name="_token"]').value;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: '_token=' + encodeURIComponent(csrf) + '&_method=DELETE'
+                })
+                .then(res => {
+                    if (res.ok || res.redirected) {
+                        // Remove the thumbnail from the DOM immediately
+                        if (wrapper) wrapper.remove();
+                    } else {
+                        alert('Failed to remove image. Please try again.');
+                    }
+                })
+                .catch(() => alert('Network error. Please try again.'));
             });
         });
-    </script>
+
+    });
+</script>
 @endpush
 
 @push('styles')
-    <style>
-        .upload-area:hover {
-            border-color: #4361ee !important;
-            background: rgba(67, 97, 238, 0.03);
-        }
-        .premium-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
-        }
-    </style>
+<style>
+    .upload-area:hover {
+        border-color: #4361ee !important;
+        background: rgba(67, 97, 238, 0.03);
+    }
+    .premium-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
+    }
+    .gallery-img-wrapper:hover .btn-danger {
+        opacity: 1;
+    }
+</style>
 @endpush
