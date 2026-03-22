@@ -32,6 +32,7 @@
                     <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">#</th>
                     <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">Photo</th>
                     <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">Name</th>
+                    <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">Category</th>
                     <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">Designation</th>
                     <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">Qualification</th>
                     <th class="text-muted small fw-bold text-uppercase py-3" style="letter-spacing: 0.5px;">Experience</th>
@@ -47,6 +48,19 @@
                     </td>
                     <td class="py-3">
                         <p class="mb-0 fw-bold">{{ $teacher->name }}</p>
+                    </td>
+                    <td class="py-3">
+                        @php
+                            $categoryColors = [
+                                'teacher'          => 'success',
+                                'librarian'        => 'warning',
+                                'office-assistant' => 'info',
+                            ];
+                            $color = $categoryColors[$teacher->category] ?? 'secondary';
+                        @endphp
+                        <span class="badge bg-{{ $color }} bg-opacity-10 text-{{ $color }} rounded-pill px-3 py-2 fw-bold" style="text-transform: capitalize;">
+                            {{ ucwords(str_replace('-', ' ', $teacher->category ?? '—')) }}
+                        </span>
                     </td>
                     <td class="py-3">
                         <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-bold">{{ $teacher->designation }}</span>
@@ -66,7 +80,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="text-center py-5">
+                    <td colspan="8" class="text-center py-5">
                         <div class="py-4">
                             <i class="fa fa-user-tie text-muted mb-3" style="font-size: 3rem; opacity: 0.3;"></i>
                             <p class="text-muted fw-medium mt-3 mb-1">No teachers found</p>
@@ -89,7 +103,7 @@
 </div>
 
 {{-- ========================================== --}}
-{{-- MODALS (placed outside the table)          --}}
+{{-- MODALS                                     --}}
 {{-- ========================================== --}}
 
 {{-- Add Teacher Modal --}}
@@ -99,7 +113,7 @@
             <div class="modal-header border-0 px-4 pt-4 pb-0">
                 <div>
                     <h5 class="modal-title fw-bold" id="addTeacherModalLabel">Add New Teacher</h5>
-                    <p class="text-muted small mb-0">Fill in the details to add a new teaching staff member.</p>
+                    <p class="text-muted small mb-0">Fill in the details to add a new staff member.</p>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -107,6 +121,7 @@
                 @csrf
                 <div class="modal-body p-4">
                     <div class="row g-4">
+
                         <div class="col-md-6">
                             <label class="form-label fw-medium small text-muted">Full Name <span class="text-danger">*</span></label>
                             <div class="input-group bg-light rounded-3 border">
@@ -114,7 +129,23 @@
                                 <input type="text" class="form-control bg-transparent border-0 py-2" name="name" placeholder="e.g. Dr. John Smith" value="{{ old('name') }}" required>
                             </div>
                             @error('name')
-                            <span class="text-danger small mt-1">{{ $message }}</span>
+                            <span class="text-danger small mt-1 d-block">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium small text-muted">Category <span class="text-danger">*</span></label>
+                            <div class="input-group bg-light rounded-3 border">
+                                <span class="input-group-text bg-transparent border-0"><i class="fa fa-tag text-muted small"></i></span>
+                                <select class="form-select bg-transparent border-0 py-2" name="category" required>
+                                    <option value="" disabled {{ old('category') ? '' : 'selected' }}>Select category</option>
+                                    <option value="teacher"          {{ old('category') == 'teacher'          ? 'selected' : '' }}>Teacher</option>
+                                    <option value="librarian"        {{ old('category') == 'librarian'        ? 'selected' : '' }}>Librarian</option>
+                                    <option value="office-assistant" {{ old('category') == 'office-assistant' ? 'selected' : '' }}>Office Assistant</option>
+                                </select>
+                            </div>
+                            @error('category')
+                            <span class="text-danger small mt-1 d-block">{{ $message }}</span>
                             @enderror
                         </div>
 
@@ -125,7 +156,7 @@
                                 <input type="text" class="form-control bg-transparent border-0 py-2" name="designation" placeholder="e.g. Senior Teacher" value="{{ old('designation') }}" required>
                             </div>
                             @error('designation')
-                            <span class="text-danger small mt-1">{{ $message }}</span>
+                            <span class="text-danger small mt-1 d-block">{{ $message }}</span>
                             @enderror
                         </div>
 
@@ -136,7 +167,7 @@
                                 <input type="text" class="form-control bg-transparent border-0 py-2" name="qualification" placeholder="e.g. M.Sc, B.Ed" value="{{ old('qualification') }}" required>
                             </div>
                             @error('qualification')
-                            <span class="text-danger small mt-1">{{ $message }}</span>
+                            <span class="text-danger small mt-1 d-block">{{ $message }}</span>
                             @enderror
                         </div>
 
@@ -147,7 +178,7 @@
                                 <input type="text" class="form-control bg-transparent border-0 py-2" name="experience" placeholder="e.g. 10 Years" value="{{ old('experience') }}" required>
                             </div>
                             @error('experience')
-                            <span class="text-danger small mt-1">{{ $message }}</span>
+                            <span class="text-danger small mt-1 d-block">{{ $message }}</span>
                             @enderror
                         </div>
 
@@ -166,9 +197,10 @@
                                 </div>
                             </div>
                             @error('photo')
-                            <span class="text-danger small mt-1">{{ $message }}</span>
+                            <span class="text-danger small mt-1 d-block">{{ $message }}</span>
                             @enderror
                         </div>
+
                     </div>
                 </div>
                 <div class="modal-footer border-0 px-4 pb-4 pt-0">
@@ -182,7 +214,7 @@
     </div>
 </div>
 
-{{-- Edit & Delete Modals (per teacher, outside table) --}}
+{{-- Edit & Delete Modals (per teacher) --}}
 @foreach($teachers as $teacher)
 
 {{-- Edit Teacher Modal --}}
@@ -201,11 +233,25 @@
                 @method('PUT')
                 <div class="modal-body p-4">
                     <div class="row g-4">
+
                         <div class="col-md-6">
                             <label class="form-label fw-medium small text-muted">Full Name <span class="text-danger">*</span></label>
                             <div class="input-group bg-light rounded-3 border">
                                 <span class="input-group-text bg-transparent border-0"><i class="fa fa-user text-muted small"></i></span>
                                 <input type="text" class="form-control bg-transparent border-0 py-2" name="name" value="{{ $teacher->name }}" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium small text-muted">Category <span class="text-danger">*</span></label>
+                            <div class="input-group bg-light rounded-3 border">
+                                <span class="input-group-text bg-transparent border-0"><i class="fa fa-tag text-muted small"></i></span>
+                                <select class="form-select bg-transparent border-0 py-2" name="category" required>
+                                    <option value="" disabled>Select category</option>
+                                    <option value="teacher"          {{ $teacher->category == 'teacher'          ? 'selected' : '' }}>Teacher</option>
+                                    <option value="librarian"        {{ $teacher->category == 'librarian'        ? 'selected' : '' }}>Librarian</option>
+                                    <option value="office-assistant" {{ $teacher->category == 'office-assistant' ? 'selected' : '' }}>Office Assistant</option>
+                                </select>
                             </div>
                         </div>
 
@@ -244,6 +290,7 @@
                             </div>
                             <input type="file" name="photo" class="form-control rounded-3 py-2" accept="image/*">
                         </div>
+
                     </div>
                 </div>
                 <div class="modal-footer border-0 px-4 pb-4 pt-0">
@@ -288,62 +335,62 @@
 
 @push('scripts')
 <script>
-    // Photo upload preview for Add Modal
-    const uploadArea = document.getElementById('uploadArea');
-    const photoInput = document.getElementById('photoInput');
-    const uploadPlaceholder = document.getElementById('uploadPlaceholder');
-    const uploadPreview = document.getElementById('uploadPreview');
-    const previewImg = document.getElementById('previewImg');
-    const fileName = document.getElementById('fileName');
+    document.addEventListener('DOMContentLoaded', function () {
 
-    uploadArea.addEventListener('click', () => photoInput.click());
+        // Photo upload preview for Add Modal
+        const uploadArea        = document.getElementById('uploadArea');
+        const photoInput        = document.getElementById('photoInput');
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+        const uploadPreview     = document.getElementById('uploadPreview');
+        const previewImg        = document.getElementById('previewImg');
+        const fileName          = document.getElementById('fileName');
 
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.style.borderColor = '#4361ee';
-        uploadArea.style.background = 'rgba(67, 97, 238, 0.05)';
-    });
+        uploadArea.addEventListener('click', () => photoInput.click());
 
-    uploadArea.addEventListener('dragleave', () => {
-        uploadArea.style.borderColor = '#d1d5db';
-        uploadArea.style.background = 'transparent';
-    });
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#4361ee';
+            uploadArea.style.background  = 'rgba(67, 97, 238, 0.05)';
+        });
 
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.style.borderColor = '#d1d5db';
-        uploadArea.style.background = 'transparent';
-        const files = e.dataTransfer.files;
-        if (files.length) {
-            photoInput.files = files;
-            showPreview(files[0]);
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#d1d5db';
+            uploadArea.style.background  = 'transparent';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#d1d5db';
+            uploadArea.style.background  = 'transparent';
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                photoInput.files = files;
+                showPreview(files[0]);
+            }
+        });
+
+        photoInput.addEventListener('change', (e) => {
+            if (e.target.files.length) showPreview(e.target.files[0]);
+        });
+
+        function showPreview(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                fileName.textContent = file.name;
+                uploadPlaceholder.classList.add('d-none');
+                uploadPreview.classList.remove('d-none');
+            };
+            reader.readAsDataURL(file);
         }
-    });
 
-    photoInput.addEventListener('change', (e) => {
-        if (e.target.files.length) {
-            showPreview(e.target.files[0]);
-        }
-    });
+        // Auto-open Add modal on validation errors
+        @if($errors->any())
+            var modal = new bootstrap.Modal(document.getElementById('addTeacherModal'));
+            modal.show();
+        @endif
 
-    function showPreview(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            previewImg.src = e.target.result;
-            fileName.textContent = file.name;
-            uploadPlaceholder.classList.add('d-none');
-            uploadPreview.classList.remove('d-none');
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // Auto-open modal if validation errors exist
-    @if($errors->any())
-    document.addEventListener('DOMContentLoaded', function() {
-        var modal = new bootstrap.Modal(document.getElementById('addTeacherModal'));
-        modal.show();
     });
-    @endif
 </script>
 @endpush
 

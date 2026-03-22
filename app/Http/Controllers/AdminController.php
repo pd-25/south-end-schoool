@@ -38,21 +38,21 @@ class AdminController extends Controller
     public function teacherStore(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'designation' => 'required|string|max:255',
+            'name'          => 'required|string|max:255',
+            'category'      => 'required|in:teacher,librarian,office-assistant',
+            'designation'   => 'required|string|max:255',
             'qualification' => 'required|string|max:255',
-            'experience' => 'required|string|max:255',
-            'photo' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'experience'    => 'required|string|max:255',
+            'photo'         => 'required|image|mimes:jpeg,png,jpg,webp',
         ]);
 
-        $photoPath = $request->file('photo')->store('teachers', 'public');
-
         Teacher::create([
-            'name' => $request->name,
-            'designation' => $request->designation,
+            'name'          => $request->name,
+            'category'      => $request->category,
+            'designation'   => $request->designation,
             'qualification' => $request->qualification,
-            'experience' => $request->experience,
-            'photo' => $photoPath,
+            'experience'    => $request->experience,
+            'photo'         => $this->storeTeacherPhoto($request->file('photo')),
         ]);
 
         return redirect()->route('admin.teachers.index')->with('success', 'Teacher added successfully!');
@@ -61,30 +61,54 @@ class AdminController extends Controller
     public function teacherUpdate(Request $request, Teacher $teacher)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'designation' => 'required|string|max:255',
+            'name'          => 'required|string|max:255',
+            'category'      => 'required|in:teacher,librarian,office-assistant',
+            'designation'   => 'required|string|max:255',
             'qualification' => 'required|string|max:255',
-            'experience' => 'required|string|max:255',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'experience'    => 'required|string|max:255',
+            'photo'         => 'nullable|image|mimes:jpeg,png,jpg,webp',
         ]);
 
         $data = [
-            'name' => $request->name,
-            'designation' => $request->designation,
+            'name'          => $request->name,
+            'category'      => $request->category,
+            'designation'   => $request->designation,
             'qualification' => $request->qualification,
-            'experience' => $request->experience,
+            'experience'    => $request->experience,
         ];
 
         if ($request->hasFile('photo')) {
+            // Delete old photo
             if ($teacher->photo && Storage::disk('public')->exists($teacher->photo)) {
                 Storage::disk('public')->delete($teacher->photo);
             }
-            $data['photo'] = $request->file('photo')->store('teachers', 'public');
+            $data['photo'] = $this->storeTeacherPhoto($request->file('photo'));
         }
 
         $teacher->update($data);
 
         return redirect()->route('admin.teachers.index')->with('success', 'Teacher updated successfully!');
+    }
+
+    private function storeTeacherPhoto(\Illuminate\Http\UploadedFile $file): string
+    {
+        $dir = storage_path('app/public/teachers');
+
+        if (!file_exists($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $filename = time() . '_' . uniqid() . '.jpg';
+        $savePath = $dir . '/' . $filename;
+
+        $manager = new ImageManager(new Driver());
+
+        $manager->read($file)
+            ->scaleDown(width: 800, height: 800)
+            ->toJpeg(quality: 80)
+            ->save($savePath);
+
+        return 'teachers/' . $filename;
     }
 
     public function teacherDelete(Teacher $teacher)

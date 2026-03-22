@@ -58,18 +58,21 @@ class FrontendFrontendController extends Controller
 
     public function teachers()
     {
-        $teachers = Teacher::all();
+        $teachers = Teacher::where('category', 'teacher')->latest()->get();
         return view('frontend.teachers', compact('teachers'));
     }
 
     public function librarian()
     {
-        return view('frontend.librarian');
+        $teachers = Teacher::where('category', 'librarian')->latest()->get();
+        return view('frontend.librarian', compact('teachers'));
     }
 
     public function officeAssistants()
     {
-        return view('frontend.office-assistants');
+        $teachers = Teacher::where('category', 'office-assistant')->latest()->get();
+
+        return view('frontend.office-assistants', compact('teachers'));
     }
 
     public function studentsCouncil()
