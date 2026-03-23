@@ -50,6 +50,21 @@
             </li>
 
             <li class="nav-item mt-2">
+                <a class="nav-link d-flex align-items-center p-3 rounded-4 text-muted" href="#" data-bs-toggle="collapse" data-bs-target="#schoolCouncil">
+                    <i class="fa fa-graduation-cap me-3" style="width: 20px;"></i>
+                    <span class="fw-medium">Students Council</span>
+                    <i class="fa fa-chevron-right ms-auto small"></i>
+                </a>
+                <div class="collapse ms-4 mt-1" id="schoolCouncil">
+                    <ul class="nav flex-column gap-1 small">
+                        <li><a href="{{ route('admin.council.category.index') }}" class="nav-link p-2 {{ Route::is('admin.council.category.index') ? 'text-primary fw-bold' : 'text-muted' }}">Categories</a></li>
+                        <li><a href="{{ route('admin.council.index') }}" class="nav-link p-2 {{ Route::is('admin.council.*') ? 'text-primary fw-bold' : 'text-muted' }}">Add Council</a></li>
+                        <!-- <li><a href="#" class="nav-link p-2 text-muted">Examination</a></li> -->
+                    </ul>
+                </div>
+            </li>
+
+            <li class="nav-item mt-2">
                 <a class="nav-link d-flex align-items-center p-3 rounded-4 text-muted" href="#" data-bs-toggle="collapse" data-bs-target="#gallaryMenu">
                     <i class="fa fa-graduation-cap me-3" style="width: 20px;"></i>
                     <span class="fw-medium">Image Gallary</span>
@@ -63,6 +78,8 @@
                     </ul>
                 </div>
             </li>
+
+
 
             <!-- <li class="nav-item">
                 <a class="nav-link d-flex align-items-center p-3 rounded-4 {{ Route::is('admin.gallery.*') ? 'active bg-primary bg-opacity-10 text-primary' : 'text-muted' }}" href="{{ route('admin.gallery.index') }}">

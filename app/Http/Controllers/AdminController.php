@@ -13,6 +13,8 @@ use App\Models\Syllabus;
 use App\Models\Result;
 use App\Models\LatestNews;
 use App\Models\Career;
+use App\Models\Council;
+use App\Models\CouncilCategory;
 use App\Models\GalleryCategory;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -179,10 +181,127 @@ class AdminController extends Controller
         return redirect()->route('admin.toppers.index')->with('success', 'Topper deleted successfully!');
     }
 
+    // ─── Council Category ─────────────────────────────────────
+
+    public function councilCategoryIndex()
+    {
+        $categories = CouncilCategory::latest()->get();
+        return view('admin.council.category', compact('categories'));
+    }
+
+    public function councilCategoryStore(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:council_categories,name',
+        ]);
+
+        CouncilCategory::create([
+            'name' => $request->name,
+        ]);
+
+        return redirect()->back()
+            ->with('success', 'Category created successfully.');
+    }
+
+    public function councilCategoryUpdate(Request $request, $id)
+    {
+        $category = CouncilCategory::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255|unique:council_categories,name,' . $id,
+        ]);
+
+        $category->update([
+            'name' => $request->name,
+        ]);
+
+        return redirect()->back()
+            ->with('success', 'Category updated successfully.');
+    }
+
+    public function councilCategoryDelete($id)
+    {
+        $category = CouncilCategory::findOrFail($id);
+        $category->delete();
+
+        return redirect()->back()
+            ->with('success', 'Category deleted successfully.');
+    }
+
+    public function councilIndex()
+    {
+        $councils    = Council::with('category')->latest()->get();
+        $categories  = CouncilCategory::latest()->get();
+        return view('admin.council.index', compact('councils', 'categories'));
+    }
+
+    public function councilStore(Request $request)
+    {
+        $request->validate([
+            'category_id'  => 'required|exists:council_categories,id',
+            'heading'      => 'required|string|max:255',
+            'designation'  => 'required|string|max:255',
+            'image'        => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+        ]);
+
+        $imagePath = $request->file('image')->store('councils', 'public');
+
+        Council::create([
+            'category_id' => $request->category_id,
+            'heading'     => $request->heading,
+            'designation' => $request->designation,
+            'image'       => $imagePath,
+        ]);
+
+        return redirect()->back()->with('success', 'Council member added successfully.');
+    }
+
+    public function councilUpdate(Request $request, $council)
+    {
+        $councilModel = Council::findOrFail($council);
+
+        $request->validate([
+            'category_id'  => 'required|exists:council_categories,id',
+            'heading'      => 'required|string|max:255',
+            'designation'  => 'required|string|max:255',
+            'image'        => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+        ]);
+
+        $data = [
+            'category_id' => $request->category_id,
+            'heading'     => $request->heading,
+            'designation' => $request->designation,
+        ];
+
+        if ($request->hasFile('image')) {
+            // Delete old image
+            if ($councilModel->image && Storage::disk('public')->exists($councilModel->image)) {
+                Storage::disk('public')->delete($councilModel->image);
+            }
+            $data['image'] = $request->file('image')->store('councils', 'public');
+        }
+
+        $councilModel->update($data);
+
+        return redirect()->back()->with('success', 'Council member updated successfully.');
+    }
+
+    public function councilDelete($council)
+    {
+        $councilModel = Council::findOrFail($council);
+
+        if ($councilModel->image && Storage::disk('public')->exists($councilModel->image)) {
+            Storage::disk('public')->delete($councilModel->image);
+        }
+
+        $councilModel->delete();
+
+        return redirect()->back()->with('success', 'Council member deleted successfully.');
+    }
+
+
+
     // ─── Gallery ─────────────────────────────────────
-
-
-
     public function galleryCategoryList()
     {
         $categories = GalleryCategory::latest()->paginate(10);

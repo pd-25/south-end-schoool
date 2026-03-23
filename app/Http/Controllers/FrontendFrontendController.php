@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Career;
+use App\Models\CouncilCategory;
 use Illuminate\Http\Request;
 use App\Models\Topper;
 use App\Models\NoticeBoard;
@@ -77,7 +78,8 @@ class FrontendFrontendController extends Controller
 
     public function studentsCouncil()
     {
-        return view('frontend.students-council');
+        $categories = CouncilCategory::with(['councils'])->get();
+        return view('frontend.students-council', compact('categories'));
     }
 
     public function classrooms()

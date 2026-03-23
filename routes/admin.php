@@ -29,12 +29,25 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('/toppers/{topper}', [AdminController::class, 'topperUpdate'])->name('toppers.update');
         Route::delete('/toppers/{topper}', [AdminController::class, 'topperDelete'])->name('toppers.delete');
 
-        // Gallery
+        // Council Catgeory
+        Route::get('council/category', [AdminController::class, 'councilCategoryIndex'])->name('council.category.index');
+        Route::post('council/category/store', [AdminController::class, 'councilCategoryStore'])->name('council.category.store');
+        Route::put('council/category/{id}/update', [AdminController::class, 'councilCategoryUpdate'])->name('council.category.update');
+        Route::delete('council/category/{id}/delete', [AdminController::class, 'councilCategoryDelete'])->name('council.category.delete');
+
+        // Council
+        Route::get('/council', [AdminController::class, 'councilIndex'])->name('council.index');
+        Route::post('/council', [AdminController::class, 'councilStore'])->name('council.store');
+        Route::put('/council/{council}', [AdminController::class, 'councilUpdate'])->name('council.update');
+        Route::delete('/council/{council}', [AdminController::class, 'councilDelete'])->name('council.delete');
+
+        // Gallery Category
         Route::get('gallery/category', [AdminController::class, 'galleryCategoryList'])->name('gallery.category.index');
         Route::post('gallery/category/store', [AdminController::class, 'galleryCategoryStore'])->name('gallery.category.store');
         Route::put('gallery/category/{id}/update', [AdminController::class, 'galleryCategoryUpdate'])->name('gallery.category.update');
         Route::delete('gallery/category/{id}/delete', [AdminController::class, 'galleryCategoryDelete'])->name('gallery.category.delete');
 
+        // Gallery
         Route::get('/gallery', [AdminController::class, 'galleryList'])->name('gallery.index');
         Route::post('/gallery', [AdminController::class, 'galleryStore'])->name('gallery.store');
         Route::put('/gallery/{galary}', [AdminController::class, 'galleryUpdate'])->name('gallery.update');
